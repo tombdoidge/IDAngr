@@ -7,7 +7,7 @@ from idaapi import PluginForm
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import Qt
 
-from ui import *
+from .ui import *
 
 from angrdbg import *
 
@@ -19,11 +19,11 @@ import idc
 import idautils
 
 import glob
-import sip
+# import sip
 import pickle
 import os
 
-import manage
+from idangr import manage
 
 class IDAngrCtx(object):
     def __init__(self):
@@ -94,7 +94,7 @@ class IDAngrAddMemDialog(QtWidgets.QDialog):
         self.ui.lenTextEdit.setText(str(load_project().arch.bits / 8))
         
     def set_addr(self, addr):
-        if type(addr) == int or type(addr) == long:
+        if type(addr) == int:
             addr = "0x%x" % addr
         self.ui.addrTextEdit.setText(addr)
     
@@ -166,7 +166,7 @@ class IDAngrConstraintsDialog(QtWidgets.QDialog):
         self.ui = Ui_IDAngrConstraintsDialog()
         self.ui.setupUi(self)
         
-        if type(item) in (int, long):
+        if type(item) in (int):
             item = hex(item)
         
         self.ui.constrEdit.setPlainText(text)
@@ -198,16 +198,16 @@ class IDAngrConstraintsDialog(QtWidgets.QDialog):
             try:
                 if manage.is_remote():
                     manage.remote_exec(func)
+                    constr_func = manage.remote_eval("constr_func")
                 else:
-                    exec(func) in globals()
+                    local_scope = {}
+                    exec(func, globals(), local_scope)
+                    constr_func = local_scope["constr_func"]
             except Exception as ee:
                 QtWidgets.QMessageBox(QtWidgets.QMessageBox.Critical, 'Constraints Code - Python Error', str(ee)).exec_()
                 return
-            
-            if manage.is_remote():
-                _idangr_ctx.constraints[item] = (code, manage.remote_eval("constr_func"))
-            else:
-                _idangr_ctx.constraints[item] = (code, constr_func)
+
+            _idangr_ctx.constraints[item] = (code, constr_func)
         
     
 class IDAngrExecDialog(QtWidgets.QDialog):
@@ -258,7 +258,9 @@ class IDAngrExecDialog(QtWidgets.QDialog):
                         manage.remote_exec("avoids = %s" % repr(finds))
                         manage.remote_exec(code)
                     else:
-                        exec(code) in locals()
+                        local_scope = {}
+                        exec(code, globals(), local_scope)
+                        find_cond = local_scope["find_cond"]
                 except Exception as ee:
                     QtWidgets.QMessageBox(QtWidgets.QMessageBox.Critical, 'Find Condition - Python Error', str(ee)).exec_()
                     return None
@@ -283,7 +285,9 @@ class IDAngrExecDialog(QtWidgets.QDialog):
                         manage.remote_exec("avoids = %s" % repr(finds))
                         manage.remote_exec(code)
                     else:
-                        exec(code) in locals()
+                        local_scope = {}
+                        exec(code, globals(), local_scope)
+                        avoid_cond = local_scope["avoid_cond"]
                 except Exception as ee:
                     QtWidgets.QMessageBox(QtWidgets.QMessageBox.Critical, 'Avoid Condition - Python Error', str(ee)).exec_()
                     return None
@@ -443,11 +447,11 @@ class IDAngrPanelForm(PluginForm):
             return
         _idangr_ctx.foundstate = sm.found[0]
         conc = _idangr_ctx.stateman.concretize(_idangr_ctx.foundstate)
-        for i in xrange(len(_idangr_ctx.simregs)):
+        for i in range(len(_idangr_ctx.simregs)):
             try:
                 _idangr_ctx.simregs[i][2] = "0x%x" % conc[_idangr_ctx.simregs[i][0]]
             except: pass
-        for i in xrange(len(_idangr_ctx.simmem)):
+        for i in range(len(_idangr_ctx.simmem)):
             try:
                 _idangr_ctx.simmem[i][2] = repr(conc[int(_idangr_ctx.simmem[i][0], 16)])
             except: pass
@@ -505,11 +509,11 @@ class IDAngrPanelForm(PluginForm):
             return
         _idangr_ctx.foundstate = sm.found[-1]
         conc = _idangr_ctx.stateman.concretize(_idangr_ctx.foundstate)
-        for i in xrange(len(_idangr_ctx.simregs)):
+        for i in range(len(_idangr_ctx.simregs)):
             try:
                 _idangr_ctx.simregs[i][2] = "0x%x" % conc[_idangr_ctx.simregs[i][0]]
             except: pass
-        for i in xrange(len(_idangr_ctx.simmem)):
+        for i in range(len(_idangr_ctx.simmem)):
             try:
                 _idangr_ctx.simmem[i][2] = repr(conc[int(_idangr_ctx.simmem[i][0], 16)])
             except: pass
@@ -607,7 +611,7 @@ class IDAngrPanelForm(PluginForm):
     
     def add_mem(self, addr, size):
         global _idangr_ctx
-        if type(addr) == int or type(addr) == long:
+        if type(addr) == int:
             addr = "0x%x" % addr
         _idangr_ctx.simmem.append([addr, size, "?"])
         self.ui.memoryView.model().layoutChanged.emit()
@@ -768,14 +772,12 @@ idaapi.register_action(idaapi.action_desc_t('Symbolic', 'Symbolic', IDAngrAction
 _idangr_hooks = IDAngrHooks()
 _idangr_hooks.hook()
 
-
-try:
-    _idangr_panel
-except:
-    _idangr_panel = IDAngrPanelForm()
+_idangr_panel = None
 
 def idangr_panel_show():
     global _idangr_panel
+    if _idangr_panel is None:
+        _idangr_panel = IDAngrPanelForm()
     _idangr_panel.Show()
 
 

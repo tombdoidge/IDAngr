@@ -7,11 +7,10 @@ from idaapi import PluginForm
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import Qt
 
-from ui import *
+from .ui import *
 from appdirs import user_data_dir
-from distutils.dir_util import mkpath
 
-import manage
+from idangr import manage
 import os
 import json
 
@@ -54,7 +53,7 @@ class IDAngrConnectDialog(QtWidgets.QDialog):
                     "save": True,
                     "local": dialog.ui.localBox.isChecked()
                 }
-                mkpath(user_data_dir("IDAngr", "IDA Pro"))
+                os.makedirs(user_data_dir("IDAngr", "IDA Pro"))
                 with open(config_file, "w") as f:
                     json.dump(config, f, indent=4)
             
