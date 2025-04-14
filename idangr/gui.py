@@ -3,8 +3,9 @@
 # License: BSD 2-Clause                              #
 ######################################################
 
-from idangr import manage
-
+from . import manage
+from . import init_gui
+from . import main_gui
 
 print("######### IDAngr GUI #########")
 
@@ -32,7 +33,6 @@ def found_state():
         raise RuntimeError("GUI not initialized")
     else:
         from .main_gui import _idangr_ctx
-        if _idangr_ctx.foundtstate is None:
+        if _idangr_ctx.foundstate is None:  # fixed typo: was "foundtstate"
             raise RuntimeError("State not found in GUI")
-        return _idangr_ctx.foundtstate
-
+        return _idangr_ctx.foundstate

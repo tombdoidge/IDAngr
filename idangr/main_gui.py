@@ -712,8 +712,7 @@ class IDAngrPanelForm(PluginForm):
         """Creates the form is not created or focuses it if it was"""
         return PluginForm.Show(self,
                                "IDAngr Panel",
-                               options = (PluginForm.FORM_TAB | PluginForm.FORM_CLOSE_LATER))
-
+                               options = (PluginForm.WOPN_TAB | PluginForm.WCLS_CLOSE_LATER))
 
 
 

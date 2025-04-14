@@ -1,4 +1,5 @@
 import idaapi
+from . import gui
 
 ######################################################
 # Author: Andrea Fioraldi <andreafioraldi@gmail.com> #
@@ -30,9 +31,7 @@ class IDAngrPlugin(idaapi.plugin_t):
         idaapi.msg("IDAngr plugin: terminated\n")
 
     def openPanel(self):
-        import idangr
-        import idangr.gui
-        idangr.gui.show()
+        gui.show()
 
 
 def PLUGIN_ENTRY():
